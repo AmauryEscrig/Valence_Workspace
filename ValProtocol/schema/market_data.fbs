@@ -1,0 +1,24 @@
+namespace Valence.Protocol;
+
+enum OrderSide : byte { Buy = 0, Sell = 1 }
+
+table Order {
+  id: uint64;
+  symbol: string;
+  price: double;
+  quantity: uint32;
+  side: OrderSide;
+}
+
+table BookUpdate {
+  symbol: string;
+  bids: [Level];
+  asks: [Level];
+}
+
+struct Level {
+  price: double;
+  quantity: uint32;
+}
+
+root_type BookUpdate;
