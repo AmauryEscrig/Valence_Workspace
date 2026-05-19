@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/Users/amauryescrig/Desktop/Valence_Workspace/build",
+  "command": "/usr/bin/clang++ -I/opt/homebrew/include -I/Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/include -I/Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/src -g -std=gnu++20 -arch arm64 -o CMakeFiles/ValInfra.dir/src/main.cpp.o -c /Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/src/main.cpp",
+  "file": "/Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/src/main.cpp",
+  "output": "/Users/amauryescrig/Desktop/Valence_Workspace/build/CMakeFiles/ValInfra.dir/src/main.cpp.o"
+},
+{
+  "directory": "/Users/amauryescrig/Desktop/Valence_Workspace/build",
+  "command": "/usr/bin/clang++ -I/opt/homebrew/include -I/Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/include -I/Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/src -g -std=gnu++20 -arch arm64 -o CMakeFiles/ValInfra.dir/src/OrderBook.cpp.o -c /Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/src/OrderBook.cpp",
+  "file": "/Users/amauryescrig/Desktop/Valence_Workspace/ValInfra/src/OrderBook.cpp",
+  "output": "/Users/amauryescrig/Desktop/Valence_Workspace/build/CMakeFiles/ValInfra.dir/src/OrderBook.cpp.o"
+}
+]
