@@ -8,4 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(), // <--- Add this to your plugins array
   ],
+  server: {
+    host: '0.0.0.0', // This tells the server to listen on all network interfaces
+    port: 5173       // Or whichever port you are using
+  }
 })

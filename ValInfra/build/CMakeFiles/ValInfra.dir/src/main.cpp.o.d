@@ -1016,7 +1016,6 @@ CMakeFiles/ValInfra.dir/src/main.cpp.o: \
   /opt/homebrew/include/boost/asio/detail/assert.hpp \
   /opt/homebrew/include/boost/assert.hpp \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_assert.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/_static_assert.h \
   /opt/homebrew/include/boost/asio/detail/atomic_count.hpp \
   /opt/homebrew/include/boost/asio/detail/cstddef.hpp \
