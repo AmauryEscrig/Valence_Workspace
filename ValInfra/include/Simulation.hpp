@@ -81,7 +81,7 @@ private:
             book_.addOrder(order_id++, snapped_price, quantity, side);
 
             // 6. Ultra-High-Frequency Throttle (10ms) to ensure the wider DOM fills up
-            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
 
