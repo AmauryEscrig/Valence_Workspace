@@ -30,8 +30,9 @@ void OrderBook::match() {
         if (itBid->first >= itAsk->first) {
             uint32_t matchedQty = std::min(itBid->second, itAsk->second);
             
-            std::cout << "[MATCH] Trade Executed at $" << itAsk->first 
-                      << " | Quantity: " << matchedQty << std::endl;
+            
+
+            std::cout << "\033[33m" << "[MATCH] Trade Executed at $" << itAsk->first << " | Quantity: " << matchedQty << "\033[0m\n";
 
             itBid->second -= matchedQty;
             itAsk->second -= matchedQty;

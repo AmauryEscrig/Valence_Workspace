@@ -58,11 +58,11 @@ const DomRow = memo(({ price, bidQty, askQty, maxVol, theme, openOrders }) => {
 
   useEffect(() => {
     let isFlashing = false;
-    if (bidQty > 0 && bidQty !== prevBid.current) { setFlash('bid'); isFlashing = true; } 
-    else if (askQty > 0 && askQty !== prevAsk.current) { setFlash('ask'); isFlashing = true; }
+    if (bidQty > 60 && bidQty !== prevBid.current) { setFlash('bid'); isFlashing = true; } 
+    else if (askQty > 60 && askQty !== prevAsk.current) { setFlash('ask'); isFlashing = true; }
     prevBid.current = bidQty; prevAsk.current = askQty;
     if (isFlashing) {
-      const timer = setTimeout(() => setFlash(null), 150);
+      const timer = setTimeout(() => setFlash(null), 100);
       return () => clearTimeout(timer);
     }
   }, [bidQty, askQty]);
@@ -138,20 +138,16 @@ const VolumeRow = memo(({ price, qty, isBid, maxVol, theme, openOrders, algoDelt
 });
 
 // =========================================================================
-// SUB-COMPONENT: VERTICAL EXECUTION STRIP (DIRECTIONAL LOCKING INCLUDED)
+// SUB-COMPONENT: VERTICAL EXECUTION STRIP 
 // =========================================================================
 const ExecutionStrip = memo(({ theme, execMode, setExecMode, algoStrategy, setAlgoStrategy, executeTrade, cancelOrders, triggerAlgo, account, riskParams, setRiskParams, bestBid, bestAsk }) => {
   const isDark = theme === 'dark';
   const [orderQty, setOrderQty] = useState(10);
   const [orderPrice, setOrderPrice] = useState(bestBid ? bestBid.toFixed(2) : "100.00");
   
-  // Directional Lock Logic
   const buyingPower = account.equity - account.usedMargin;
   const netQty = account.positions.reduce((acc, p) => acc + (p.side === 'BUY' ? p.qty : -p.qty), 0);
-  
-  // You can buy if you have cash OR if you are short (buying covers the short and frees margin)
   const buyLocked = buyingPower <= 0 && netQty >= 0; 
-  // You can sell if you have cash OR if you are long (selling covers the long and frees margin)
   const sellLocked = buyingPower <= 0 && netQty <= 0; 
   
   const selectCls = `w-full text-[10px] py-1 px-1 border rounded shadow-sm outline-none font-bold cursor-pointer ${isDark ? 'bg-zinc-800 border-zinc-700 text-slate-300 hover:bg-zinc-700' : 'bg-gradient-to-b from-white to-gray-200 border-gray-400 text-gray-800'}`;
@@ -293,7 +289,7 @@ const ExecutionStrip = memo(({ theme, execMode, setExecMode, algoStrategy, setAl
 });
 
 // =========================================================================
-// SUB-COMPONENT: OMS & RISK BLOTTER (CASH BASIS UPDATE)
+// SUB-COMPONENT: OMS & RISK BLOTTER 
 // =========================================================================
 const OMSBlotter = memo(({ theme, account, execMode }) => {
   const isDark = theme === 'dark';
@@ -321,7 +317,6 @@ const OMSBlotter = memo(({ theme, account, execMode }) => {
       </div>
       <div className={`flex-1 overflow-y-auto text-[10px] font-mono ${isDark ? 'bg-black' : 'bg-white'}`}>
         
-        {/* ACCOUNTING MODULE */}
         {activeTab === 'ACCOUNTING' && (
           <div className="p-3 flex flex-col h-full space-y-4">
              <div className="grid grid-cols-2 gap-4">
@@ -368,7 +363,6 @@ const OMSBlotter = memo(({ theme, account, execMode }) => {
           </div>
         )}
 
-        {/* POSITIONS TABLE */}
         {activeTab === 'POSITIONS' && (
           <table className="w-full whitespace-nowrap">
             <thead>
@@ -389,7 +383,6 @@ const OMSBlotter = memo(({ theme, account, execMode }) => {
           </table>
         )}
 
-        {/* OPEN ORDERS (LMT/STP/SL/TP) TABLE */}
         {activeTab === 'OPEN ORDERS' && (
           <table className="w-full whitespace-nowrap">
             <thead>
@@ -410,7 +403,6 @@ const OMSBlotter = memo(({ theme, account, execMode }) => {
           </table>
         )}
 
-        {/* ALGO QUEUES */}
         {activeTab === 'ALGO QUEUES' && (
           <table className="w-full whitespace-nowrap">
             <thead>
@@ -466,7 +458,7 @@ const LiveTickerFeed = memo(({ theme, isConnected, midPriceRef }) => {
           return newFeed.slice(0, 40);
         });
       }
-    }, 500);
+    }, 200);
     return () => clearInterval(tickerInterval);
   }, [isConnected, midPriceRef]);
 
@@ -487,7 +479,7 @@ const LiveTickerFeed = memo(({ theme, isConnected, midPriceRef }) => {
 });
 
 // =========================================================================
-// ISOLATED COMPONENTS: CHARTS (WITH EXECUTION MARKERS & GLOBAL VWAP)
+// ISOLATED COMPONENTS: CHARTS
 // =========================================================================
 const PriceWaveChart = memo(({ theme, midPriceRef, latestFills, cumulativeAlgoVwap, globalMarketStats }) => {
   const [chartData, setChartData] = useState([]);
@@ -512,7 +504,7 @@ const PriceWaveChart = memo(({ theme, midPriceRef, latestFills, cumulativeAlgoVw
         
         latestFills.current = { buys: [], sells: [] };
       }
-    }, 1000);
+    }, 300);
     return () => clearInterval(chartInterval);
   }, [midPriceRef, latestFills, cumulativeAlgoVwap, globalMarketStats]);
 
@@ -551,8 +543,8 @@ const DepthMountainChart = memo(({ theme, bids, asks }) => {
   const isDark = theme === 'dark';
 
   const depthData = useMemo(() => {
-    const topBids = [...bids].slice(0, 40).sort((a,b) => b[0] - a[0]);
-    const topAsks = [...asks].slice(0, 40).sort((a,b) => a[0] - b[0]);
+    const topBids = [...bids].sort((a,b) => b[0] - a[0]);
+    const topAsks = [...asks].sort((a,b) => a[0] - b[0]);
     
     let cumBid = 0, bidPoints = [];
     topBids.forEach(([p, q]) => { cumBid += q; bidPoints.push({ price: p.toFixed(2), bidVol: cumBid, darkBidVol: cumBid * 1.8, askVol: 0, darkAskVol: 0 }); });
@@ -589,7 +581,7 @@ const DepthMountainChart = memo(({ theme, bids, asks }) => {
 });
 
 // =========================================================================
-// SUB-COMPONENT: COMMS TURRET (FULL CAPACITY & LCD KEYPAD)
+// SUB-COMPONENT: COMMS TURRET
 // =========================================================================
 const TradingTurret = memo(({ theme }) => {
   const isDark = theme === 'dark';
@@ -644,7 +636,6 @@ const TradingTurret = memo(({ theme }) => {
         <div className="flex flex-col justify-around py-1">{[1,2,3,4].map(i => <div key={`rs-${i}`} className={`w-2.5 h-1.5 rounded-sm shadow-inner ${isDark ? 'bg-zinc-700' : 'bg-gray-400'}`}></div>)}</div>
       </div>
       <div className="w-[85px] flex flex-col space-y-1 justify-center pl-1">
-        {/* Mock LCD Screen */}
         <div className="bg-black border-2 border-zinc-700 rounded mb-1 px-1 h-8 flex flex-col justify-center items-end text-green-400 font-mono text-[9px] shadow-inner overflow-hidden relative">
            {callState === "CALLING..." && <div className="absolute top-0 left-1 animate-pulse text-[7px] text-yellow-500">DIALING</div>}
            {callState === "CONNECTED" && <div className="absolute top-0 left-1 animate-pulse text-[7px] text-green-500">LIVE</div>}
@@ -672,6 +663,7 @@ export default function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [corrAlert, setCorrAlert] = useState(false);
   
+  // Dynamic Book State (Managed by the Math Engine now)
   const [bids, setBids] = useState([]);
   const [asks, setAsks] = useState([]);
   
@@ -679,18 +671,39 @@ export default function App() {
   const [algoStrategy, setAlgoStrategy] = useState('TWAP');
 
   const [riskParams, setRiskParams] = useState({
-    rsk: { enabled: true, value: 0.1 },
-    sl: { enabled: true, value: 5 }, 
-    tp: { enabled: true, value: 5 }
+    rsk: { enabled: false, value: 1 },
+    sl: { enabled: true, value: 15 }, 
+    tp: { enabled: true, value: 15 }
   });
 
-  const latestMarketData = useRef({ bids: [], asks: [] });
-  const latestMidPriceRef = useRef(null);
-  const latestFills = useRef({ buys: [], sells: [] });
+  // =========================================================================
+  // REFLEXIVE STOCHASTIC PRICING ENGINE STATE
+  // =========================================================================
+  const TICK_SIZE = 0.05;
+  const latestMidPriceRef = useRef(100.00);
+  const accumulatedUserDelta = useRef(0); // Tracks MKT orders for Endogenous Impact
   
-  // VWAP Tracking
+  const simulationEngineConfig = useRef({
+    marketTrend: 0.0000,
+    TREND_DAMPING_RATE: 0.95,
+    TREND_VOLATILITY: 0.012,
+    TREND_PERSISTENCE: 0.90,
+    NOISE_FACTOR: 0.015,
+    VOLUME_IMPACT_FACTOR: 0.0001,
+    LAMBDA_VAL: 3.0,
+    TREND_MAX: 0.2,
+    TREND_MIN: -0.2,
+    C_REV: 0.01,
+    C_CAP: 0.25,
+    NET_VOLUME_MEAN: 500, //switched it from 1500 to 500
+    // Dynamic Book Spread Parameters
+    BASE_VOL: 50, //switched it from 150 to 50
+    DECAY_RATE: 0.08
+  });
+
+  const latestFills = useRef({ buys: [], sells: [] });
   const cumulativeAlgoVwap = useRef({ vol: 0, dollars: 0 });
-  const globalMarketStats = useRef({ vol: 15000, dollars: 15000 * 100.00 }); // Base init to stabilize line
+  const globalMarketStats = useRef({ vol: 15000, dollars: 15000 * 100.00 }); 
   const algoDeltaProfile = useRef({}); 
   
   const [account, setAccount] = useState({
@@ -707,16 +720,18 @@ export default function App() {
 
   const isDark = theme === 'dark';
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  const TICK_SIZE = 0.05;
 
   // =========================================================================
-  // GATEWAY EXECUTION LOGIC
+  // GATEWAY EXECUTION LOGIC (WITH ENDOGENOUS IMPACT)
   // =========================================================================
   const executeTrade = useCallback((side, qty, type = 'MKT', price = null) => {
     if (qty <= 0 && side !== 'FLAT') return;
     
-    const currentAsk = latestMarketData.current.asks[0] ? latestMarketData.current.asks[0][0] : 100.05;
-    const currentBid = latestMarketData.current.bids[0] ? latestMarketData.current.bids[0][0] : 99.95;
+    // In our new engine, best Ask and Bid are calculated directly from the snapped mid
+    const snappedMid = Math.round(latestMidPriceRef.current / TICK_SIZE) * TICK_SIZE;
+    const currentAsk = snappedMid + TICK_SIZE;
+    const currentBid = snappedMid - TICK_SIZE;
+    
     const execPrice = side === 'BUY' ? currentAsk : currentBid;
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -733,12 +748,18 @@ export default function App() {
 
       if (side === 'FLAT') {
         let realizedPnL = 0;
+        let totalFlatVol = 0;
         newPositions.forEach(pos => {
           const exitPrice = pos.side === 'BUY' ? currentBid : currentAsk;
           realizedPnL += (pos.side === 'BUY' ? (exitPrice - pos.entry) : (pos.entry - exitPrice)) * pos.qty;
           newHistory.push({ time: timeStr, side: `CLOSE ${pos.side}`, qty: pos.qty, price: exitPrice });
           latestFills.current[pos.side === 'BUY' ? 'sells' : 'buys'].push(exitPrice);
+          totalFlatVol += (pos.side === 'BUY' ? -pos.qty : pos.qty); 
         });
+        
+        // Massive endogenous shock on flatten
+        accumulatedUserDelta.current += totalFlatVol;
+
         return { ...prev, balance: prev.balance + realizedPnL, equity: prev.balance + realizedPnL, usedMargin: 0, marginUtilization: 0, totalPnL: 0, positions: [], openOrders: [], algoQueues: [], history: newHistory };
       }
 
@@ -747,10 +768,12 @@ export default function App() {
          return { ...prev, openOrders: newOpenOrders };
       }
 
-      // Directional Lock Enforcement for Direct MKT execution
       const notional = qty * execPrice;
       if (side === 'BUY' && buyingPower < notional && netQty >= 0) return prev; 
       if (side === 'SELL' && buyingPower < notional && netQty <= 0) return prev;
+
+      // ENDOGENOUS IMPACT PUSH 
+      accumulatedUserDelta.current += (side === 'BUY' ? qty : -qty);
 
       const posId = Math.floor(Math.random() * 9000);
       const existingPos = newPositions.find(p => p.side === side);
@@ -774,7 +797,6 @@ export default function App() {
     });
   }, [riskParams]);
 
-  // ALGO TRIGGER NOW ACCEPTS RISK PARAMS
   const triggerAlgo = useCallback((side, totalQty, strategy) => {
     if (totalQty <= 0) return;
     const slOffset = riskParams.sl.enabled ? riskParams.sl.value * TICK_SIZE : null;
@@ -792,181 +814,203 @@ export default function App() {
   }, []);
 
   // =========================================================================
-  // MATCHING ENGINE & PNL METRONOME
+  // MATCHING ENGINE & MONTE CARLO STOCHASTIC METRONOME
   // =========================================================================
   useEffect(() => {
-    const ws = new WebSocket('ws://127.0.0.1:8080');
-    ws.onopen = () => setIsConnected(true);
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        latestMarketData.current = data;
-        if (data.asks && data.asks.length > 0 && data.bids && data.bids.length > 0) {
-          latestMidPriceRef.current = parseFloat(((data.asks[0][0] + data.bids[0][0]) / 2).toFixed(2));
-        }
-      } catch (e) {}
-    };
-    ws.onclose = () => { setIsConnected(false); setBids([]); setAsks([]); };
+    setIsConnected(true);
 
     const uiRenderInterval = setInterval(() => {
-      const data = latestMarketData.current;
-      const currentMid = latestMidPriceRef.current;
-      const currentAsk = data.asks && data.asks.length > 0 ? data.asks[0][0] : null;
-      const currentBid = data.bids && data.bids.length > 0 ? data.bids[0][0] : null;
+      const config = simulationEngineConfig.current;
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      // --- 1. REFLEXIVE PRICING MATH EXECUTION ---
       
-      if (data.bids) setBids(data.bids);
-      if (data.asks) setAsks(data.asks);
+      // A. Damped Trend Update
+      config.marketTrend *= config.TREND_DAMPING_RATE;
+      if (Math.random() > config.TREND_PERSISTENCE) {
+         config.marketTrend += (Math.random() - 0.5) * config.TREND_VOLATILITY;
+         config.marketTrend = Math.max(config.TREND_MIN, Math.min(config.TREND_MAX, config.marketTrend));
+      }
+
+      // B. Endogenous Volume Pressure (Box-Muller Normal Distro + User Impact)
+      let u = 0, v = 0;
+      while(u === 0) u = Math.random();
+      while(v === 0) v = Math.random();
+      let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      
+      const bgVolume = num * (config.NET_VOLUME_MEAN / 10) * config.LAMBDA_VAL; 
+      const vt_bg = bgVolume * config.VOLUME_IMPACT_FACTOR;
+      const vt_user = accumulatedUserDelta.current * config.VOLUME_IMPACT_FACTOR;
+      const volumePressure = vt_bg + vt_user;
+
+      // C. Noise
+      const noise = (Math.random() - 0.5) * (config.NOISE_FACTOR * config.LAMBDA_VAL);
+
+      // D. Anti-Pin Reversion
+      let currentMid = latestMidPriceRef.current;
+      const reversion = currentMid > 0.1 ? Math.min(config.C_CAP, config.C_REV / currentMid) : config.C_REV;
+
+      // E. Total Delta Application
+      const deltaP = config.marketTrend + noise + volumePressure + reversion;
+      currentMid = Math.max(1.00, currentMid + deltaP);
+      latestMidPriceRef.current = currentMid;
+      
+      accumulatedUserDelta.current = 0; // Clear the user shock buffer
       if (Math.random() > 0.95) { setCorrAlert(true); setTimeout(() => setCorrAlert(false), 2000); }
 
-      if (currentMid && currentAsk && currentBid) {
-          
-          // Simulate Global Market Volume for VWAP Tracker
-          const tickVol = Math.floor(Math.random() * 100) + 10;
-          globalMarketStats.current.vol += tickVol;
-          globalMarketStats.current.dollars += tickVol * currentMid;
+      // --- 2. DYNAMIC BOOK GENERATION (ASYMMETRIC LIQUIDITY) ---
+      const snappedMid = Math.round(currentMid / TICK_SIZE) * TICK_SIZE;
+      const bestAsk = snappedMid + TICK_SIZE;
+      const bestBid = snappedMid - TICK_SIZE;
 
-          setAccount(prev => {
-              let updatedPositions = [...prev.positions];
-              let updatedHistory = [...prev.history];
-              let updatedAlgos = [...prev.algoQueues];
-              let updatedOpenOrders = [...prev.openOrders];
-              let realizedBalanceAcc = prev.balance;
-              let requiresUpdate = false;
-              const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const newAsks = [];
+      const newBids = [];
+      
+      for(let k = 0; k < 20; k++) {
+         const askP = bestAsk + (k * TICK_SIZE);
+         let askQ = Math.round(config.BASE_VOL * (1 - (config.marketTrend / config.TREND_MAX)) * Math.pow(1 - config.DECAY_RATE, k));
+         askQ = Math.max(0, askQ + Math.floor(Math.random() * 10 - 5)); 
+         newAsks.push([askP, askQ]);
 
-              // 1. LOB Engine (LMT, SL, TP)
-              const remainingOrders = [];
-              updatedOpenOrders.forEach(ord => {
-                 let triggered = false;
-                 let execPrice = ord.price;
-
-                 if (ord.type === 'LMT') {
-                    if (ord.side === 'BUY' && currentAsk <= ord.price) { triggered = true; execPrice = currentAsk; }
-                    if (ord.side === 'SELL' && currentBid >= ord.price) { triggered = true; execPrice = currentBid; }
-                 } else if (ord.type === 'SL') {
-                    if (ord.side === 'BUY' && currentAsk >= ord.price) { triggered = true; execPrice = currentAsk; }
-                    if (ord.side === 'SELL' && currentBid <= ord.price) { triggered = true; execPrice = currentBid; }
-                 } else if (ord.type === 'TP') {
-                    if (ord.side === 'BUY' && currentAsk <= ord.price) { triggered = true; }
-                    if (ord.side === 'SELL' && currentBid >= ord.price) { triggered = true; }
-                 }
-
-                 if (triggered) {
-                    requiresUpdate = true;
-                    latestFills.current[ord.side === 'BUY' ? 'buys' : 'sells'].push(execPrice);
-                    
-                    if (ord.type === 'LMT') {
-                        const posId = Math.floor(Math.random() * 9000);
-                        updatedPositions.push({ id: posId, side: ord.side, qty: ord.qty, entry: execPrice, upnl: 0 });
-                        updatedHistory.push({ time: timeStr, side: `LMT ${ord.side}`, qty: ord.qty, price: execPrice });
-                        
-                        const exitSide = ord.side === 'BUY' ? 'SELL' : 'BUY';
-                        if (ord.slOffset) remainingOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'SL', qty: ord.qty, price: ord.side === 'BUY' ? execPrice - ord.slOffset : execPrice + ord.slOffset, linkedPos: posId });
-                        if (ord.tpOffset) remainingOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'TP', qty: ord.qty, price: ord.side === 'BUY' ? execPrice + ord.tpOffset : execPrice - ord.tpOffset, linkedPos: posId });
-                    } else if (ord.type === 'SL' || ord.type === 'TP') {
-                        const posIndex = updatedPositions.findIndex(p => p.id === ord.linkedPos);
-                        if (posIndex !== -1) {
-                            const pos = updatedPositions[posIndex];
-                            const pnl = pos.side === 'BUY' ? (execPrice - pos.entry) * pos.qty : (pos.entry - execPrice) * pos.qty;
-                            realizedBalanceAcc += pnl;
-                            updatedPositions.splice(posIndex, 1);
-                            updatedHistory.push({ time: timeStr, side: `${ord.type} ${ord.side}`, qty: ord.qty, price: execPrice });
-                            ord.resolvePos = ord.linkedPos; 
-                        }
-                    }
-                 } else {
-                    remainingOrders.push(ord);
-                 }
-              });
-
-              const resolvedPositions = updatedOpenOrders.filter(o => o.resolvePos).map(o => o.resolvePos);
-              updatedOpenOrders = remainingOrders.filter(o => !resolvedPositions.includes(o.linkedPos));
-
-              // 2. Algo Queues (Now appending OCO Risk dynamically)
-              updatedAlgos = updatedAlgos.map(algo => {
-                  if (algo.status === 'WORKING') {
-                      requiresUpdate = true;
-                      const sliceAmount = Math.min(Math.floor(Math.random() * 15) + 5, algo.total - algo.filled);
-                      algo.filled += sliceAmount;
-                      const execPrice = algo.side === 'BUY' ? currentAsk : currentBid;
-                      
-                      cumulativeAlgoVwap.current.vol += sliceAmount;
-                      cumulativeAlgoVwap.current.dollars += sliceAmount * execPrice;
-                      latestFills.current[algo.side === 'BUY' ? 'buys' : 'sells'].push(execPrice);
-                      const pStr = execPrice.toFixed(2);
-                      algoDeltaProfile.current[pStr] = (algoDeltaProfile.current[pStr] || 0) + sliceAmount;
-
-                      updatedHistory.push({ time: timeStr, side: `ALGO ${algo.side}`, qty: sliceAmount, price: execPrice });
-                      
-                      let targetPosId;
-                      const existingPos = updatedPositions.find(p => p.side === algo.side);
-                      if (existingPos) {
-                          existingPos.qty += sliceAmount;
-                          existingPos.entry = ((existingPos.entry * (existingPos.qty - sliceAmount)) + (execPrice * sliceAmount)) / existingPos.qty;
-                          targetPosId = existingPos.id;
-                      } else {
-                          targetPosId = Math.floor(Math.random() * 9000);
-                          updatedPositions.push({ id: targetPosId, side: algo.side, qty: sliceAmount, entry: execPrice, upnl: 0 });
-                      }
-
-                      // Dynamic Algo OCO Adjustments
-                      if (algo.slOffset || algo.tpOffset) {
-                          const exitSide = algo.side === 'BUY' ? 'SELL' : 'BUY';
-                          const posRef = existingPos || updatedPositions[updatedPositions.length-1];
-                          
-                          // Purge old OCOs for this algo position to avoid DOM clutter
-                          updatedOpenOrders = updatedOpenOrders.filter(o => o.linkedPos !== targetPosId || (o.type !== 'SL' && o.type !== 'TP'));
-                          
-                          // Spawn fresh OCOs matching new accumulated size and updated average entry price
-                          if (algo.slOffset) updatedOpenOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'SL', qty: posRef.qty, price: algo.side === 'BUY' ? posRef.entry - algo.slOffset : posRef.entry + algo.slOffset, linkedPos: targetPosId });
-                          if (algo.tpOffset) updatedOpenOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'TP', qty: posRef.qty, price: algo.side === 'BUY' ? posRef.entry + algo.tpOffset : posRef.entry - algo.tpOffset, linkedPos: targetPosId });
-                      }
-
-                      if (algo.filled >= algo.total) algo.status = 'COMPLETED';
-                  }
-                  return algo;
-              });
-
-              // 3. Mark-to-Market PnL
-              let currentTotalPnL = 0;
-              updatedPositions = updatedPositions.map(pos => {
-                  const pnl = pos.side === 'BUY' ? (currentBid - pos.entry) * pos.qty : (pos.entry - currentAsk) * pos.qty;
-                  currentTotalPnL += pnl;
-                  return { ...pos, upnl: pnl };
-              });
-
-              if (!requiresUpdate && prev.positions.length === 0) return prev; 
-
-              const currentEquity = realizedBalanceAcc + currentTotalPnL;
-              const totalMargin = updatedPositions.reduce((acc, pos) => acc + (pos.qty * pos.entry), 0);
-              const util = currentEquity > 0 ? (totalMargin / currentEquity) * 100 : 100;
-
-              return { ...prev, balance: realizedBalanceAcc, algoQueues: updatedAlgos, openOrders: updatedOpenOrders, positions: updatedPositions, history: updatedHistory, usedMargin: totalMargin, totalPnL: currentTotalPnL, equity: currentEquity, marginUtilization: util };
-          });
+         const bidP = bestBid - (k * TICK_SIZE);
+         let bidQ = Math.round(config.BASE_VOL * (1 + (config.marketTrend / config.TREND_MAX)) * Math.pow(1 - config.DECAY_RATE, k));
+         bidQ = Math.max(0, bidQ + Math.floor(Math.random() * 10 - 5)); 
+         newBids.push([bidP, bidQ]);
       }
-    }, 150);
+      
+      setAsks(newAsks);
+      setBids(newBids);
 
-    return () => { ws.close(); clearInterval(uiRenderInterval); };
+      // Log to Global Volume (Background noise)
+      globalMarketStats.current.vol += Math.abs(bgVolume);
+      globalMarketStats.current.dollars += Math.abs(bgVolume) * currentMid;
+
+      // --- 3. LOB ORDER MATCHING AGAINST NEW DYNAMIC PRICE ---
+      setAccount(prev => {
+          let updatedPositions = [...prev.positions];
+          let updatedHistory = [...prev.history];
+          let updatedAlgos = [...prev.algoQueues];
+          let updatedOpenOrders = [...prev.openOrders];
+          let realizedBalanceAcc = prev.balance;
+          let requiresUpdate = false;
+
+          const remainingOrders = [];
+          updatedOpenOrders.forEach(ord => {
+             let triggered = false;
+             let execPrice = ord.price;
+
+             if (ord.type === 'LMT') {
+                if (ord.side === 'BUY' && bestAsk <= ord.price) { triggered = true; execPrice = bestAsk; }
+                if (ord.side === 'SELL' && bestBid >= ord.price) { triggered = true; execPrice = bestBid; }
+             } else if (ord.type === 'SL') {
+                if (ord.side === 'BUY' && bestAsk >= ord.price) { triggered = true; execPrice = bestAsk; }
+                if (ord.side === 'SELL' && bestBid <= ord.price) { triggered = true; execPrice = bestBid; }
+             } else if (ord.type === 'TP') {
+                if (ord.side === 'BUY' && bestAsk <= ord.price) { triggered = true; }
+                if (ord.side === 'SELL' && bestBid >= ord.price) { triggered = true; }
+             }
+
+             if (triggered) {
+                requiresUpdate = true;
+                latestFills.current[ord.side === 'BUY' ? 'buys' : 'sells'].push(execPrice);
+                
+                // When limit fills, push endogenous shock for next tick
+                accumulatedUserDelta.current += (ord.side === 'BUY' ? ord.qty : -ord.qty);
+                
+                if (ord.type === 'LMT') {
+                    const posId = Math.floor(Math.random() * 9000);
+                    updatedPositions.push({ id: posId, side: ord.side, qty: ord.qty, entry: execPrice, upnl: 0 });
+                    updatedHistory.push({ time: timeStr, side: `LMT ${ord.side}`, qty: ord.qty, price: execPrice });
+                    
+                    const exitSide = ord.side === 'BUY' ? 'SELL' : 'BUY';
+                    if (ord.slOffset) remainingOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'SL', qty: ord.qty, price: ord.side === 'BUY' ? execPrice - ord.slOffset : execPrice + ord.slOffset, linkedPos: posId });
+                    if (ord.tpOffset) remainingOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'TP', qty: ord.qty, price: ord.side === 'BUY' ? execPrice + ord.tpOffset : execPrice - ord.tpOffset, linkedPos: posId });
+                } else if (ord.type === 'SL' || ord.type === 'TP') {
+                    const posIndex = updatedPositions.findIndex(p => p.id === ord.linkedPos);
+                    if (posIndex !== -1) {
+                        const pos = updatedPositions[posIndex];
+                        const pnl = pos.side === 'BUY' ? (execPrice - pos.entry) * pos.qty : (pos.entry - execPrice) * pos.qty;
+                        realizedBalanceAcc += pnl;
+                        updatedPositions.splice(posIndex, 1);
+                        updatedHistory.push({ time: timeStr, side: `${ord.type} ${ord.side}`, qty: ord.qty, price: execPrice });
+                        ord.resolvePos = ord.linkedPos; 
+                    }
+                }
+             } else {
+                remainingOrders.push(ord);
+             }
+          });
+
+          const resolvedPositions = updatedOpenOrders.filter(o => o.resolvePos).map(o => o.resolvePos);
+          updatedOpenOrders = remainingOrders.filter(o => !resolvedPositions.includes(o.linkedPos));
+
+          // 4. Algo Queues (Endogenous loop embedded)
+          updatedAlgos = updatedAlgos.map(algo => {
+              if (algo.status === 'WORKING') {
+                  requiresUpdate = true;
+                  const sliceAmount = Math.min(Math.floor(Math.random() * 15) + 5, algo.total - algo.filled);
+                  algo.filled += sliceAmount;
+                  const execPrice = algo.side === 'BUY' ? bestAsk : bestBid;
+                  
+                  // Endogenous Algo Push
+                  accumulatedUserDelta.current += (algo.side === 'BUY' ? sliceAmount : -sliceAmount);
+                  
+                  cumulativeAlgoVwap.current.vol += sliceAmount;
+                  cumulativeAlgoVwap.current.dollars += sliceAmount * execPrice;
+                  latestFills.current[algo.side === 'BUY' ? 'buys' : 'sells'].push(execPrice);
+                  const pStr = execPrice.toFixed(2);
+                  algoDeltaProfile.current[pStr] = (algoDeltaProfile.current[pStr] || 0) + sliceAmount;
+
+                  updatedHistory.push({ time: timeStr, side: `ALGO ${algo.side}`, qty: sliceAmount, price: execPrice });
+                  
+                  let targetPosId;
+                  const existingPos = updatedPositions.find(p => p.side === algo.side);
+                  if (existingPos) {
+                      existingPos.qty += sliceAmount;
+                      existingPos.entry = ((existingPos.entry * (existingPos.qty - sliceAmount)) + (execPrice * sliceAmount)) / existingPos.qty;
+                      targetPosId = existingPos.id;
+                  } else {
+                      targetPosId = Math.floor(Math.random() * 9000);
+                      updatedPositions.push({ id: targetPosId, side: algo.side, qty: sliceAmount, entry: execPrice, upnl: 0 });
+                  }
+
+                  if (algo.slOffset || algo.tpOffset) {
+                      const exitSide = algo.side === 'BUY' ? 'SELL' : 'BUY';
+                      const posRef = existingPos || updatedPositions[updatedPositions.length-1];
+                      updatedOpenOrders = updatedOpenOrders.filter(o => o.linkedPos !== targetPosId || (o.type !== 'SL' && o.type !== 'TP'));
+                      
+                      if (algo.slOffset) updatedOpenOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'SL', qty: posRef.qty, price: algo.side === 'BUY' ? posRef.entry - algo.slOffset : posRef.entry + algo.slOffset, linkedPos: targetPosId });
+                      if (algo.tpOffset) updatedOpenOrders.push({ id: Math.floor(Math.random()*9000), side: exitSide, type: 'TP', qty: posRef.qty, price: algo.side === 'BUY' ? posRef.entry + algo.tpOffset : posRef.entry - algo.tpOffset, linkedPos: targetPosId });
+                  }
+
+                  if (algo.filled >= algo.total) algo.status = 'COMPLETED';
+              }
+              return algo;
+          });
+
+          // 5. Mark-to-Market PnL (Using active bounds)
+          let currentTotalPnL = 0;
+          updatedPositions = updatedPositions.map(pos => {
+              const pnl = pos.side === 'BUY' ? (bestBid - pos.entry) * pos.qty : (pos.entry - bestAsk) * pos.qty;
+              currentTotalPnL += pnl;
+              return { ...pos, upnl: pnl };
+          });
+
+          if (!requiresUpdate && prev.positions.length === 0) return prev; 
+
+          const currentEquity = realizedBalanceAcc + currentTotalPnL;
+          const totalMargin = updatedPositions.reduce((acc, pos) => acc + (pos.qty * pos.entry), 0);
+          const util = currentEquity > 0 ? (totalMargin / currentEquity) * 100 : 100;
+
+          return { ...prev, balance: realizedBalanceAcc, algoQueues: updatedAlgos, openOrders: updatedOpenOrders, positions: updatedPositions, history: updatedHistory, usedMargin: totalMargin, totalPnL: currentTotalPnL, equity: currentEquity, marginUtilization: util };
+      });
+      
+    }, 250); //switched from 150 to 250
+
+    return () => clearInterval(uiRenderInterval);
   }, []);
 
-  const askMap = new Map(asks.map(([p, q]) => [p.toFixed(2), q]));
-  const bidMap = new Map(bids.map(([p, q]) => [p.toFixed(2), q]));
-  const bestAsk = asks.length > 0 ? asks[0][0] : 100.05;
-  const bestBid = bids.length > 0 ? bids[0][0] : 99.95;
-
-  const askLadder = [];
-  for (let i = 17; i >= 0; i--) {
-    const p = (bestAsk + (i * TICK_SIZE)).toFixed(2);
-    askLadder.push({ price: p, askQty: askMap.get(p) || 0, bidQty: 0 });
-  }
-
-  const bidLadder = [];
-  for (let i = 0; i <= 17; i++) {
-    const p = (bestBid - (i * TICK_SIZE)).toFixed(2);
-    bidLadder.push({ price: p, askQty: 0, bidQty: bidMap.get(p) || 0 });
-  }
-
-  const maxVol = Math.max(1, ...askLadder.map(l => l.askQty), ...bidLadder.map(l => l.bidQty));
+  const maxVol = Math.max(1, ...asks.map(l => l[1]), ...bids.map(l => l[1]));
 
   return (
     <div className={`h-screen w-screen flex flex-col font-mono text-xs select-none transition-colors duration-300 ${isDark ? 'bg-black text-slate-300' : 'bg-gray-200 text-slate-800'}`}>
@@ -1014,12 +1058,12 @@ export default function App() {
               <div className="w-1/3">BID</div><div className={`w-1/3 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>PRICE</div><div className="w-1/3">ASK</div>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden text-[10px]">
-              {askLadder.map((level) => (<DomRow key={`ask-${level.price}`} price={level.price} bidQty={0} askQty={level.askQty} maxVol={maxVol} theme={theme} openOrders={account.openOrders} />))}
+              {[...asks].reverse().map(([p, q]) => (<DomRow key={`ask-${p}`} price={p.toFixed(2)} bidQty={0} askQty={q} maxVol={maxVol} theme={theme} openOrders={account.openOrders} />))}
               <div className={`h-6 my-1 border-y flex justify-center items-center text-[10px] shrink-0 transition-colors ${isDark ? 'border-cyan-900/50 bg-cyan-950/20 text-slate-400' : 'border-cyan-200 bg-cyan-50 text-gray-500'}`}>
                 <span className="mr-2">SPREAD:</span>
                 <span className={`font-bold ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>{asks.length && bids.length ? `$${(asks[0][0] - bids[0][0]).toFixed(2)}` : "..."}</span>
               </div>
-              {bidLadder.map((level) => (<DomRow key={`bid-${level.price}`} price={level.price} bidQty={level.bidQty} askQty={0} maxVol={maxVol} theme={theme} openOrders={account.openOrders} />))}
+              {bids.map(([p, q]) => (<DomRow key={`bid-${p}`} price={p.toFixed(2)} bidQty={q} askQty={0} maxVol={maxVol} theme={theme} openOrders={account.openOrders} />))}
             </div>
           </div>
 
@@ -1029,14 +1073,14 @@ export default function App() {
               <div className="w-full">ASK (-) | BID (+)</div>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden text-[10px]">
-              {askLadder.map((level) => (<VolumeRow key={`vol-ask-${level.price}`} price={level.price} qty={level.askQty} isBid={false} maxVol={maxVol} theme={theme} openOrders={account.openOrders} algoDelta={algoDeltaProfile.current} />))}
+              {[...asks].reverse().map(([p, q]) => (<VolumeRow key={`vol-ask-${p}`} price={p.toFixed(2)} qty={q} isBid={false} maxVol={maxVol} theme={theme} openOrders={account.openOrders} algoDelta={algoDeltaProfile.current} />))}
               <div className="h-6 my-1 border-y border-transparent flex justify-center items-center shrink-0"></div>
-              {bidLadder.map((level) => (<VolumeRow key={`vol-bid-${level.price}`} price={level.price} qty={level.bidQty} isBid={true} maxVol={maxVol} theme={theme} openOrders={account.openOrders} algoDelta={algoDeltaProfile.current} />))}
+              {bids.map(([p, q]) => (<VolumeRow key={`vol-bid-${p}`} price={p.toFixed(2)} qty={q} isBid={true} maxVol={maxVol} theme={theme} openOrders={account.openOrders} algoDelta={algoDeltaProfile.current} />))}
             </div>
           </div>
 
           <div className={`w-[20%] flex flex-col overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0c]' : 'bg-gray-100'}`}>
-             <ExecutionStrip theme={theme} execMode={execMode} setExecMode={setExecMode} algoStrategy={algoStrategy} setAlgoStrategy={setAlgoStrategy} executeTrade={executeTrade} cancelOrders={cancelOrders} triggerAlgo={triggerAlgo} account={account} riskParams={riskParams} setRiskParams={setRiskParams} bestBid={bestBid} bestAsk={bestAsk} />
+             <ExecutionStrip theme={theme} execMode={execMode} setExecMode={setExecMode} algoStrategy={algoStrategy} setAlgoStrategy={setAlgoStrategy} executeTrade={executeTrade} cancelOrders={cancelOrders} triggerAlgo={triggerAlgo} account={account} riskParams={riskParams} setRiskParams={setRiskParams} bestBid={bids.length ? bids[0][0] : 0} bestAsk={asks.length ? asks[0][0] : 0} />
           </div>
         </div>
 
@@ -1045,7 +1089,7 @@ export default function App() {
             
             <div className={`h-1/2 flex border-b overflow-hidden transition-colors ${isDark ? 'border-zinc-900' : 'border-gray-200'}`}>
               <div className={`w-1/2 flex flex-col p-3 border-r overflow-hidden transition-colors ${isDark ? 'border-zinc-900' : 'border-gray-200'}`}>
-                <div className={`font-bold border-b pb-1 mb-2 uppercase tracking-wide text-[10px] ${isDark ? 'text-blue-400 border-zinc-800' : 'text-blue-700 border-gray-300'}`}>[02A] MID-MARKET PRICE WAVE</div>
+                <div className={`font-bold border-b pb-1 mb-2 uppercase tracking-wide text-[10px] ${isDark ? 'text-blue-400 border-zinc-800' : 'text-blue-700 border-gray-300'}`}>[02A] MONTE CARLO STOCHASTIC WAVE</div>
                 <div className={`flex-1 rounded border p-2 text-[10px] min-h-0 transition-colors ${isDark ? 'bg-black border-zinc-900' : 'bg-white border-gray-200'}`}>
                   <PriceWaveChart theme={theme} midPriceRef={latestMidPriceRef} latestFills={latestFills} cumulativeAlgoVwap={cumulativeAlgoVwap} globalMarketStats={globalMarketStats} />
                 </div>
@@ -1053,7 +1097,7 @@ export default function App() {
               <div className="w-1/2 flex flex-col p-3 overflow-hidden">
                 <div className={`font-bold border-b pb-1 mb-2 uppercase tracking-wide text-[10px] flex justify-between ${isDark ? 'text-blue-400 border-zinc-800' : 'text-blue-700 border-gray-300'}`}>
                   <span>[02B] LIQUIDITY DEPTH MOUNTAIN</span>
-                  <span className={`text-[8px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>SYNTHETIC POOL: ON</span>
+                  <span className={`text-[8px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>DYNAMIC SPREAD: ACTIVE</span>
                 </div>
                 <div className={`flex-1 rounded border p-2 text-[10px] min-h-0 transition-colors ${isDark ? 'bg-black border-zinc-900' : 'bg-white border-gray-200'}`}>
                    <DepthMountainChart theme={theme} bids={bids} asks={asks} />
@@ -1083,10 +1127,10 @@ export default function App() {
             <div className={`w-1/2 flex flex-col p-3 border-r transition-colors ${isDark ? 'border-zinc-900' : 'border-gray-200'}`}>
               <div className={`font-bold border-b pb-0.5 mb-1.5 uppercase tracking-wide text-[10px] ${isDark ? 'text-slate-400 border-zinc-800' : 'text-gray-500 border-gray-300'}`}>[03A] BATCH LAYER METRICS</div>
               <div className={`rounded border p-2 flex-1 font-mono text-[11px] space-y-0.5 overflow-y-auto transition-colors ${isDark ? 'bg-black border-zinc-900 text-cyan-500/80' : 'bg-gray-100 border-gray-300 text-cyan-800'}`}>
-                <div>&gt; BUYING POWER: DIRECTIONAL LOCKING ACTIVE (CAN ALWAYS CLOSE EXPOSURE)</div>
-                <div>&gt; ALGO LOGIC: DYNAMIC OCO RESIZING ACTIVE</div>
-                <div>&gt; LOB ENGINE: VWAP TRACKING AND DELTA OVERLAYS INJECTED</div>
-                <div>&gt; RISK ENGINE: CASH-BASIS ACCOUNTING ENFORCED (NO LEVERAGE)</div>
+                <div>&gt; STOCHASTIC PRICING CORE: RUNNING (OU REFLEXIVE MODEL)</div>
+                <div>&gt; ENDOGENOUS IMPACT: ACTIVE (YOUR ORDERS MOVE THE MARKET)</div>
+                <div>&gt; DYNAMIC SPREAD GEN: ACTIVE (LIQUIDITY TRACKS REGIME TREND)</div>
+                <div>&gt; BUYING POWER: DIRECTIONAL LOCKING SECURED</div>
               </div>
             </div>
             <div className="w-1/2 flex flex-col p-3">
